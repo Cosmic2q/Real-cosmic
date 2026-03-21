@@ -3,26 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>x2sxqz - Tool</title>
+    <title>x2sxqz - Tools fixed</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
         
-         body {
+        body {
             font-family: 'Inter', sans-serif;
             background-color: #020617;
             color: #f1f5f9;
-            overflow-x: hidden;
             min-height: 100vh;
-            /* เพิ่มบรรทัดนี้ */
-            touch-action: manipulation;
+            overflow-x: hidden;
         }
 
-        /* Aurora Animation Effect */
+        /* --- Advanced Loading Screen --- */
+        #loading-screen {
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%);
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease-out;
+        }
+
+        .ring-1 { animation: spin 4s linear infinite; filter: drop-shadow(0 0 8px #10b981); }
+        .ring-2 { animation: spin-reverse 3s linear infinite; filter: drop-shadow(0 0 12px #06b6d4); }
+        .ring-3 { animation: spin 1.5s ease-in-out infinite; filter: drop-shadow(0 0 5px #ffffff); }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes spin-reverse { to { transform: rotate(-360deg); } }
+
+        /* --- Aurora Background --- */
         .aurora-container {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            z-index: -1; overflow: hidden; filter: blur(100px); opacity: 0.45;
+            z-index: -1; overflow: hidden; filter: blur(100px); opacity: 0.4;
         }
 
         .aurora-layer {
@@ -30,17 +48,10 @@
             background: radial-gradient(circle at 50% 50%, 
                 rgba(16, 185, 129, 0.4) 0%, rgba(59, 130, 246, 0.2) 25%, 
                 rgba(139, 92, 246, 0.2) 50%, rgba(15, 23, 42, 0) 100%);
-            animation: rotate 25s linear infinite;
+            animation: aurora-rotate 25s linear infinite;
         }
 
-        .aurora-layer:nth-child(2) {
-            background: radial-gradient(circle at 30% 70%, 
-                rgba(6, 182, 212, 0.4) 0%, rgba(16, 185, 129, 0.3) 50%, 
-                rgba(15, 23, 42, 0) 100%);
-            animation: rotate 18s linear reverse infinite;
-        }
-
-        @keyframes rotate {
+        @keyframes aurora-rotate {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
@@ -53,302 +64,299 @@
         }
 
         .input-style {
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.4);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
             padding: 0.65rem;
             width: 100%;
-            font-family: monospace;
+            font-family: 'JetBrains Mono', monospace;
             color: #10b981;
+            font-size: 14px;
             transition: all 0.3s;
         }
 
         .input-style:focus {
-            outline: none; border-color: #10b981; background: rgba(0, 0, 0, 0.5);
+            border-color: #10b981;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.2);
+            outline: none;
         }
 
-        .subpack-item {
-            background: rgba(255, 255, 255, 0.03);
-            border-left: 3px solid #3b82f6;
+        .btn-primary {
+            background: linear-gradient(90deg, #10b981, #06b6d4);
+            color: white;
+            font-weight: 900;
+            padding: 1rem;
+            border-radius: 14px;
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 2px;
             transition: all 0.2s;
+            box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.3);
         }
 
-        .alert-enter {
-            animation: slideDown 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+        .btn-primary:hover { opacity: 0.9; transform: translateY(-2px); }
+        .btn-primary:active { transform: scale(0.98); }
+
+        #manifest-code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: #a7f3d0;
         }
 
-        @keyframes slideDown {
-            from { transform: translateY(-120%); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+        /* Success Alert */
+        #success-alert {
+            position: fixed;
+            top: 25px;
+            z-index: 200;
+            background: rgba(16, 185, 129, 0.9);
+            backdrop-filter: blur(8px);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 15px;
+            font-weight: 900;
+            font-size: 12px;
+            letter-spacing: 1px;
+            display: none;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         }
-
-        pre::-webkit-scrollbar { width: 4px; height: 4px; }
-        pre::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 10px; }
     </style>
 </head>
-<body class="flex flex-col items-center p-4 md:p-10 relative min-h-screen">
+<body class="p-4 md:p-10 flex flex-col items-center">
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="relative w-24 h-24 flex items-center justify-center">
+            <div class="absolute inset-0 border-[3px] border-emerald-500/10 border-t-emerald-500 rounded-full ring-1"></div>
+            <div class="absolute inset-3 border-[2px] border-cyan-500/10 border-b-cyan-500 rounded-full ring-2"></div>
+            <div class="absolute inset-6 border border-white/10 border-l-white rounded-full ring-3"></div>
+        </div>
+        <p class="mt-8 text-emerald-400 font-black text-[10px] tracking-[0.5em] uppercase animate-pulse">Wait x2sxqz</p>
+    </div>
 
     <div class="aurora-container">
         <div class="aurora-layer"></div>
-        <div class="aurora-layer"></div>
     </div>
 
-    <!-- Alert Notification -->
-    <div id="success-alert" class="fixed top-5 z-50 hidden pointer-events-none">
-        <div class="alert-enter bg-emerald-500/90 backdrop-blur-md text-white px-8 py-3 rounded-2xl shadow-2xl flex items-center space-x-3">
-            <span class="font-bold text-sm tracking-tight" id="alert-text">SUCCESS</span>
-        </div>
+    <div id="success-alert">ACTION SUCCESSFUL</div>
+
+    <!-- MAIN TITLE (ADDED BACK) -->
+    <div class="text-center mb-10 mt-4 relative z-10">
+        <h1 class="text-5xl md:text-6xl font-[900] text-transparent bg-clip-text bg-gradient-to-b from-white to-emerald-400 uppercase tracking-tighter italic">Project Cosmic</h1>
+        <p class="text-[10px] md:text-[12px] text-emerald-500/60 font-black tracking-[0.8em] uppercase mt-2">UUID V4 GENERATE</p>
     </div>
 
-    <div class="max-w-6xl w-full space-y-6 relative z-10">
-        <header class="text-center space-y-2">
-            <!-- ชื่อโปรเจกต์ใหม่: Project Cosmic -->
-            <h1 class="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 tracking-tighter">
-                Project Cosmic
-            </h1>
-            <!-- คำอธิบายใหม่: UUID V4 GENERATE (ปรับขนาดใหญ่ขึ้น) -->
-            <p class="text-slate-400 font-bold tracking-[0.3em] uppercase text-[11px] opacity-90">UUID V4 GENERATE - Fixed Zoom 2</p>
-        </header>
+    <div class="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-8 relative z-10">
+        
+        <!-- Input Panel -->
+        <div class="glass-card p-6 md:p-8 space-y-6">
+            <header>
+                <h2 class="text-xl font-black text-emerald-400 uppercase tracking-widest">Configuration</h2>
+            </header>
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            <!-- Settings Column -->
-            <div class="lg:col-span-5 space-y-5">
-                <div class="glass-card p-6 md:p-8 space-y-5 shadow-2xl">
-                    
-                    <!-- UUID SECTION -->
-                    <div class="grid grid-cols-1 gap-3">
-                        <div class="p-3 rounded-xl bg-black/20 border border-white/5 relative group">
-                            <label class="text-[8px] font-black text-emerald-500 uppercase tracking-widest block mb-1">Header UUID</label>
-                            <p id="display-header" class="text-[11px] font-mono text-emerald-300 truncate">---</p>
-                            <button onclick="copyText('uuid-header')" class="absolute top-2 right-3 text-[8px] font-bold text-white/40 hover:text-white transition uppercase">Copy</button>
-                        </div>
-                        <div class="p-3 rounded-xl bg-black/20 border border-white/5 relative group">
-                            <label class="text-[8px] font-black text-cyan-500 uppercase tracking-widest block mb-1">Module UUID</label>
-                            <p id="display-module" class="text-[11px] font-mono text-cyan-300 truncate">---</p>
-                            <button onclick="copyText('uuid-module')" class="absolute top-2 right-3 text-[8px] font-bold text-white/40 hover:text-white transition uppercase">Copy</button>
-                        </div>
-                    </div>
-
-                    <!-- CORE CONFIG -->
-                    <div class="space-y-4">
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="col-span-2">
-                                <label class="block text-[9px] font-black text-slate-500 mb-1 tracking-widest uppercase">Project Name</label>
-                                <input type="text" id="pack-name" value="" oninput="updateManifest()" class="input-style text-xs">
-                            </div>
-                            <div class="col-span-2">
-                                <label class="block text-[9px] font-black text-slate-500 mb-1 tracking-widest uppercase">Description</label>
-                                <input type="text" id="pack-desc" value="" oninput="updateManifest()" class="input-style text-xs">
-                            </div>
-                            <div class="col-span-2">
-                                <label class="block text-[9px] font-black text-slate-500 mb-1 tracking-widest uppercase">Module Type</label>
-                                <select id="pack-type" onchange="updateManifest()" class="input-style text-xs cursor-pointer appearance-none">
-                                    <option value="resources">Resources</option>
-                                    <option value="data">Behavior</option>
-                                    <option value="skin_pack">Skin</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-[9px] font-black text-slate-500 mb-1 tracking-widest uppercase">Header Version</label>
-                                <input type="text" id="pack-ver" value="1.10.1" oninput="updateManifest()" class="input-style text-xs text-center">
-                            </div>
-                            <div>
-                                <label class="block text-[9px] font-black text-slate-500 mb-1 tracking-widest uppercase">Module Version</label>
-                                <input type="text" id="module-ver" value="0.0.1" oninput="updateManifest()" class="input-style text-xs text-center">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- SUBPACKS SECTION -->
-                    <div class="pt-4 border-t border-white/5">
-                        <div class="flex justify-between items-center mb-3">
-                            <label class="text-[10px] font-black text-blue-400 uppercase tracking-widest">Subpacks Settings</label>
-                            <button onclick="addSubpack()" class="text-[9px] font-black bg-blue-500/20 text-blue-300 px-3 py-1 rounded-full hover:bg-blue-500/40 transition">+ Add Subpack</button>
-                        </div>
-                        <div id="subpacks-container" class="space-y-3 max-h-[180px] overflow-y-auto pr-2 scrollbar-hide">
-                            <!-- Dynamic Subpacks Here -->
-                        </div>
-                    </div>
-
-                    <!-- ปุ่มหลักใหม่: Generate -->
-                    <button onclick="generateNewUUIDs()" class="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-black py-4 rounded-xl transition-all shadow-xl active:scale-[0.97] tracking-widest text-sm uppercase">
-                        Generate
-                    </button>
+            <!-- UUID View -->
+            <div class="grid grid-cols-1 gap-3">
+                <div class="bg-black/40 p-4 rounded-xl border border-white/5 relative group">
+                    <span class="text-[8px] font-black text-emerald-500 uppercase tracking-widest block mb-1">Header UUID</span>
+                    <code id="display-header" class="text-[11px] font-mono text-emerald-300">---</code>
+                    <button onclick="copyText('uuid-header')" class="absolute top-4 right-4 text-[8px] font-bold text-white/30 hover:text-emerald-400 transition">COPY</button>
+                </div>
+                <div class="bg-black/40 p-4 rounded-xl border border-white/5 relative group">
+                    <span class="text-[8px] font-black text-cyan-500 uppercase tracking-widest block mb-1">Module UUID</span>
+                    <code id="display-module" class="text-[11px] font-mono text-cyan-300">---</code>
+                    <button onclick="copyText('uuid-module')" class="absolute top-4 right-4 text-[8px] font-bold text-white/30 hover:text-cyan-400 transition">COPY</button>
                 </div>
             </div>
 
-            <!-- Code Column -->
-            <div class="lg:col-span-7 h-full">
-                <div class="glass-card p-1 shadow-2xl overflow-hidden flex flex-col h-full">
-                    <div class="flex justify-between items-center p-4 bg-white/5 rounded-t-[22px]">
-                        <div class="flex space-x-2 px-1 items-center">
-                            <div class="w-2.5 h-2.5 rounded-full bg-red-500/40"></div>
-                            <div class="w-2.5 h-2.5 rounded-full bg-amber-500/40"></div>
-                            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500/40"></div>
-                            <span class="text-[10px] text-slate-500 font-mono ml-2">manifest.json</span>
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="copyText('manifest-code')" class="text-[9px] font-black bg-white/10 px-4 py-2 rounded-lg hover:bg-white/20 transition uppercase">Copy</button>
-                            <button onclick="downloadManifest()" class="text-[9px] font-black bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-400 transition uppercase shadow-lg shadow-blue-500/20">Download</button>
-                        </div>
+            <!-- Fields -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="col-span-2">
+                    <label class="text-[9px] uppercase font-black text-slate-400 ml-1">Pack Name</label>
+                    <input type="text" id="pack-name" placeholder="ชื่อแพ็ก" oninput="update()" class="input-style">
+                </div>
+                <div>
+                    <label class="text-[9px] uppercase font-black text-slate-400 ml-1">Header Desc</label>
+                    <input type="text" id="pack-desc" placeholder="คำอธิบายหลัก" oninput="update()" class="input-style">
+                </div>
+                <div>
+                    <label class="text-[9px] uppercase font-black text-slate-400 ml-1">Module Desc</label>
+                    <input type="text" id="mod-desc" placeholder="คำอธิบายโมดูล" oninput="update()" class="input-style">
+                </div>
+                <div>
+                    <label class="text-[9px] uppercase font-black text-slate-400 ml-1">Type</label>
+                    <select id="pack-type" onchange="update()" class="input-style cursor-pointer">
+                        <option value="resources">Resources</option>
+                        <option value="data">Behavior</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <div class="w-1/2">
+                        <label class="text-[9px] uppercase font-black text-slate-400 ml-1">Header version</label>
+                        <input type="text" id="pack-ver" value="1.10.1" oninput="update()" class="input-style text-center">
                     </div>
-                    <div class="relative flex-grow">
-                        <pre id="manifest-code" class="p-8 text-[13px] font-mono overflow-auto text-emerald-400/90 leading-relaxed max-h-[700px] scrollbar-hide"></pre>
+                    <div class="w-1/2">
+                        <label class="text-[9px] uppercase font-black text-slate-400 ml-1">Module version</label>
+                        <input type="text" id="module-ver" value="0.0.1" oninput="update()" class="input-style text-center">
                     </div>
                 </div>
+            </div>
+
+            <!-- Subpacks -->
+            <div class="pt-4 border-t border-white/10">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-[10px] font-black uppercase text-blue-400 tracking-widest">Subpacks</h3>
+                    <button onclick="addSubpack()" class="text-[9px] font-black bg-blue-500/20 text-blue-300 px-4 py-1 rounded-full hover:bg-blue-500/40 transition">+ ADD NEW</button>
+                </div>
+                <div id="subpacks-container" class="space-y-3 max-h-[160px] overflow-y-auto pr-2"></div>
+            </div>
+
+            <button onclick="generate()" class="btn-primary">Generate</button>
+        </div>
+
+        <!-- Preview Panel -->
+        <div class="glass-card flex flex-col overflow-hidden min-h-[500px]">
+            <div class="bg-white/5 p-4 flex justify-between items-center border-b border-white/10">
+                <div class="flex gap-1.5">
+                    <div class="w-2.5 h-2.5 rounded-full bg-red-500/30"></div>
+                    <div class="w-2.5 h-2.5 rounded-full bg-amber-500/30"></div>
+                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500/30"></div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="copyText('manifest-code')" class="text-[10px] font-black bg-white/5 px-4 py-2 rounded-lg hover:bg-white/10 transition border border-white/5">COPY</button>
+                    <button onclick="download()" class="text-[10px] font-black bg-emerald-500 text-white px-4 py-2 rounded-lg hover:bg-emerald-400 transition">DOWNLOAD</button>
+                </div>
+            </div>
+            <div class="p-8 overflow-auto flex-grow bg-black/20">
+                <pre id="manifest-code" class="leading-relaxed"></pre>
             </div>
         </div>
     </div>
 
-    <!-- Storage -->
     <input type="hidden" id="uuid-header">
     <input type="hidden" id="uuid-module">
 
     <script>
-        let subpacks = [
-            { folder_name: "name", name: "name", memory_tier: 1 },
-            { folder_name: "name", name: "name", memory_tier: 1 }
-        ];
+        let subpacks = [];
 
-        function generateUUID() {
+        function genUUID() {
             return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
                 const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
                 return v.toString(16);
             });
         }
 
-        function parseVersion(id) {
-            const val = document.getElementById(id).value || "0.0.1";
-            return val.split('.').map(n => parseInt(n) || 0);
+        function parseVer(id) {
+            return (document.getElementById(id).value || "1.0.0").split('.').map(n => parseInt(n) || 0);
         }
 
-        function renderSubpackInputs() {
+        function addSubpack() {
+            subpacks.push({ folder_name: "", name: "", memory_tier: 1 });
+            renderSubpacks();
+            update();
+        }
+
+        function removeSubpack(i) {
+            subpacks.splice(i, 1);
+            renderSubpacks();
+            update();
+        }
+
+        function renderSubpacks() {
             const container = document.getElementById('subpacks-container');
             container.innerHTML = '';
-            subpacks.forEach((sp, index) => {
+            subpacks.forEach((sp, i) => {
                 const div = document.createElement('div');
-                div.className = 'subpack-item p-3 rounded-lg relative space-y-2';
+                div.className = 'p-4 rounded-xl bg-black/40 border border-white/5 space-y-3';
                 div.innerHTML = `
                     <div class="grid grid-cols-2 gap-2">
-                        <div class="space-y-1">
-                             <span class="text-[7px] font-bold text-slate-500 uppercase ml-1">Folder Name</span>
-                             <input type="text" placeholder="Folder Name" value="${sp.folder_name}" 
-                                oninput="updateSubpack(${index}, 'folder_name', this.value)" 
-                                class="input-style text-[10px] py-1.5">
-                        </div>
-                        <div class="space-y-1">
-                             <span class="text-[7px] font-bold text-slate-500 uppercase ml-1">Subpack Name</span>
-                             <input type="text" placeholder="Subpack Name" value="${sp.name}" 
-                                oninput="updateSubpack(${index}, 'name', this.value)" 
-                                class="input-style text-[10px] py-1.5">
-                        </div>
+                        <input type="text" placeholder="Folder" value="${sp.folder_name}" oninput="subUpdate(${i}, 'folder_name', this.value)" class="input-style !text-[11px] !py-2">
+                        <input type="text" placeholder="Name" value="${sp.name}" oninput="subUpdate(${i}, 'name', this.value)" class="input-style !text-[11px] !py-2">
                     </div>
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-2">
-                            <span class="text-[8px] font-bold text-slate-500 uppercase">Memory Tier:</span>
-                            <input type="number" value="${sp.memory_tier}" 
-                                oninput="updateSubpack(${index}, 'memory_tier', this.value)" 
-                                class="input-style text-[10px] py-1 w-16 text-center">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase">Tier:</span>
+                            <input type="number" value="${sp.memory_tier}" oninput="subUpdate(${i}, 'memory_tier', this.value)" class="input-style !w-14 !py-1 text-center !text-[11px]">
                         </div>
-                        <button onclick="removeSubpack(${index})" class="text-red-400 hover:text-red-300 text-[10px] font-bold">REMOVE</button>
+                        <button onclick="removeSubpack(${i})" class="text-red-400 text-[10px] font-bold uppercase tracking-tighter">Remove</button>
                     </div>
                 `;
                 container.appendChild(div);
             });
         }
 
-        function updateSubpack(index, field, value) {
-            subpacks[index][field] = field === 'memory_tier' ? parseInt(value) || 0 : value;
-            updateManifest();
+        function subUpdate(i, field, val) {
+            subpacks[i][field] = field === 'memory_tier' ? parseInt(val) || 0 : val;
+            update();
         }
 
-        function addSubpack() {
-            subpacks.push({ folder_name: "name", name: "name", memory_tier: 1 });
-            renderSubpackInputs();
-            updateManifest();
-        }
-
-        function removeSubpack(index) {
-            subpacks.splice(index, 1);
-            renderSubpackInputs();
-            updateManifest();
-        }
-
-        function updateManifest() {
+        function update() {
             const h = document.getElementById('uuid-header').value;
             const m = document.getElementById('uuid-module').value;
             const name = document.getElementById('pack-name').value;
-            const desc = document.getElementById('pack-desc').value;
+            const hDesc = document.getElementById('pack-desc').value;
+            const mDesc = document.getElementById('mod-desc').value;
             const type = document.getElementById('pack-type').value;
-            const version = parseVersion('pack-ver');
-            const modVersion = parseVersion('module-ver');
 
-            document.getElementById('display-header').textContent = h;
-            document.getElementById('display-module').textContent = m;
+            document.getElementById('display-header').innerText = h || "---";
+            document.getElementById('display-module').innerText = m || "---";
 
             const manifest = {
                 "format_version": 2,
                 "header": {
-                    "description": desc,
+                    "description": hDesc,
                     "name": name,
                     "uuid": h,
-                    "version": version,
+                    "version": parseVer('pack-ver'),
                     "min_engine_version": [1, 16, 0]
                 },
                 "modules": [
                     {
-                        "description": name,
+                        "description": mDesc,
                         "type": type,
                         "uuid": m,
-                        "version": modVersion
+                        "version": parseVer('module-ver')
                     }
-                ],
-                "subpacks": subpacks
+                ]
             };
-            document.getElementById('manifest-code').textContent = JSON.stringify(manifest, null, 4);
+            if (subpacks.length > 0) manifest.subpacks = subpacks;
+            document.getElementById('manifest-code').innerText = JSON.stringify(manifest, null, 4);
         }
 
-        function generateNewUUIDs() {
-            document.getElementById('uuid-header').value = generateUUID();
-            document.getElementById('uuid-module').value = generateUUID();
-            updateManifest();
-            showAlert("GENERATED & SYNCED");
+        function generate() {
+            document.getElementById('uuid-header').value = genUUID();
+            document.getElementById('uuid-module').value = genUUID();
+            update();
+            notify("NEW PROJECT INITIALIZED");
         }
 
-        function showAlert(text) {
-            const alert = document.getElementById('success-alert');
-            document.getElementById('alert-text').textContent = text;
-            alert.classList.remove('hidden');
-            setTimeout(() => alert.classList.add('hidden'), 2500);
+        function notify(txt) {
+            const el = document.getElementById('success-alert');
+            el.innerText = txt;
+            el.style.display = 'block';
+            setTimeout(() => el.style.display = 'none', 2000);
         }
 
         function copyText(id) {
-            const inputEl = document.getElementById(id);
-            const text = inputEl.tagName === 'INPUT' || inputEl.tagName === 'TEXTAREA' ? inputEl.value : inputEl.textContent;
-            
+            const el = document.getElementById(id);
+            const txt = el.tagName === 'INPUT' ? el.value : el.innerText;
             const ta = document.createElement("textarea");
-            ta.value = text;
-            document.body.appendChild(ta);
-            ta.select();
-            document.execCommand('copy');
-            document.body.removeChild(ta);
-            showAlert("COPIED TO CLIPBOARD");
+            ta.value = txt; document.body.appendChild(ta); ta.select();
+            document.execCommand('copy'); document.body.removeChild(ta);
+            notify("COPIED TO CLIPBOARD");
         }
 
-        function downloadManifest() {
-            const blob = new Blob([document.getElementById('manifest-code').textContent], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
+        function download() {
+            const blob = new Blob([document.getElementById('manifest-code').innerText], { type: 'application/json' });
             const a = document.createElement('a');
-            a.href = url; a.download = 'manifest.json';
-            document.body.appendChild(a); a.click();
-            document.body.removeChild(a); URL.revokeObjectURL(url);
+            a.href = URL.createObjectURL(blob); a.download = 'manifest.json';
+            a.click();
         }
 
         window.onload = () => {
-            document.getElementById('uuid-header').value = generateUUID();
-            document.getElementById('uuid-module').value = generateUUID();
-            renderSubpackInputs();
-            updateManifest();
+            generate();
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.opacity = '0';
+                setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 800);
+            }, 1200);
         };
     </script>
 </body>
