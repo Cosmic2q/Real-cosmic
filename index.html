@@ -1,340 +1,366 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { 
-  QrCode, Link as LinkIcon, Download, Copy, Share2, 
-  History, Palette, Moon, Sun, LayoutGrid, Type, ImagePlus, X
-} from 'lucide-react';
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quantum QR Pro | สร้าง QR Code ภาษาไทยสวยๆ</title>
+    
+    <!-- SEO Tags -->
+    <meta name="description" content="เครื่องมือสร้าง QR Code ระดับพรีเมียม รองรับภาษาไทย 100% ปรับแต่งสี ไล่เฉดสี และใส่โลโก้ได้ตามต้องการ">
+    <meta name="keywords" content="สร้าง qr code, qr code ภาษาไทย, qr code สีสวย, quantum qr">
+    <meta name="author" content="NongDiw">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Quantum QR Pro - พรีเมียม QR Code สำหรับคุณ">
+    <meta property="og:description" content="สร้าง QR Code ภาษาไทย แสกนติดง่าย ปรับแต่งดีไซน์ได้ไม่จำกัด">
+    <meta property="og:image" content="https://quantumqrbynongdiw.pro/og-image.png">
 
-// --- Helper Functions ---
-const hexToRgb = (hex) => {
-  const shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
-  hex = hex.replace(shorthandRegex, (m, r, g, b) => r + r + g + g + b + b);
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? {
-    r: parseInt(result[1], 16),
-    g: parseInt(result[2], 16),
-    b: parseInt(result[3], 16)
-  } : null;
-};
+    <!-- Stylesheets -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #8B5CF6;
+            --secondary: #06B6D4;
+        }
+        body {
+            font-family: 'Inter', 'Kanit', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .glass-panel {
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+        input[type="color"]::-webkit-color-swatch { border: none; border-radius: 8px; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 transition-colors duration-500">
+    <div id="root"></div>
 
-const getLuminance = (hex) => {
-  const rgb = hexToRgb(hex);
-  if (!rgb) return 0;
-  const [r, g, b] = [rgb.r, rgb.g, rgb.b].map(c => {
-    c /= 255;
-    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-};
+    <!-- React and Libraries -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-const getContrast = (hex1, hex2) => {
-  const l1 = getLuminance(hex1);
-  const l2 = getLuminance(hex2);
-  const lightest = Math.max(l1, l2);
-  const darkest = Math.min(l1, l2);
-  return (lightest + 0.05) / (darkest + 0.05);
-};
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
 
-const encodeUtf8 = (str) => {
-  try {
-    return unescape(encodeURIComponent(str));
-  } catch (e) {
-    return str;
-  }
-};
+        // --- Utils ---
+        const hexToRgb = (hex) => {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
+        };
 
-const dict = {
-  en: {
-    urlTab: 'URL Link', textTab: 'Plain Text',
-    websiteUrl: 'Website URL', textContent: 'Text Content',
-    textPlaceholder: 'Type here...',
-    colors: 'Colors & Design', primary: 'Primary Color', secondary: 'Secondary Color', bg: 'Background Color',
-    shapes: 'Shapes', pattern: 'Pattern Style', square: 'Square', dots: 'Dots', rounded: 'Rounded',
-    customLogo: 'Center Logo', upload: 'Upload Logo',
-    init: 'Initializing...', lowContrast: 'Low Contrast', greatContrast: 'Great Contrast',
-    dlPng: 'Download PNG', dlSvg: 'Download SVG', copy: 'Copy Image', share: 'Share QR',
-    historyTitle: 'History', noHistory: 'No history yet.', restore: 'Restore',
-    copied: 'Copied to clipboard!',
-  },
-  th: {
-    urlTab: 'ลิงก์ URL', textTab: 'ข้อความธรรมดา',
-    websiteUrl: 'URL เว็บไซต์', textContent: 'เนื้อหาข้อความ',
-    textPlaceholder: 'พิมพ์ที่นี่...',
-    colors: 'สีและการออกแบบ', primary: 'สีหลัก', secondary: 'สีรอง', bg: 'สีพื้นหลัง',
-    shapes: 'รูปทรง', pattern: 'สไตล์รูปแบบ', square: 'สี่เหลี่ยม', dots: 'จุด', rounded: 'โค้งมน',
-    customLogo: 'โลโก้ตรงกลาง', upload: 'อัปโหลดโลโก้',
-    init: 'กำลังเริ่มต้น...', lowContrast: 'คอนทราสต์ต่ำ', greatContrast: 'คอนทราสต์ดี',
-    dlPng: 'ดาวน์โหลด PNG', dlSvg: 'ดาวน์โหลด SVG', copy: 'คัดลอกรูปภาพ', share: 'แชร์ QR',
-    historyTitle: 'ประวัติ', noHistory: 'ยังไม่มีประวัติ', restore: 'กู้คืน',
-    copied: 'คัดลอกแล้ว!',
-  }
-};
+        const getLuminance = (hex) => {
+            const rgb = hexToRgb(hex);
+            if (!rgb) return 0;
+            const [r, g, b] = [rgb.r, rgb.g, rgb.b].map(c => {
+                c /= 255;
+                return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+            });
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        };
 
-export default function App() {
-  const [isLibLoaded, setIsLibLoaded] = useState(false);
-  const qrCodeRef = useRef(null);
-  const qrContainerRef = useRef(null);
+        const getContrast = (hex1, hex2) => {
+            const l1 = getLuminance(hex1);
+            const l2 = getLuminance(hex2);
+            return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+        };
 
-  const [theme, setTheme] = useState('dark');
-  const [lang, setLang] = useState('th');
-  const [activeTab, setActiveTab] = useState('url');
-  const [history, setHistory] = useState([]);
-  const [showHistory, setShowHistory] = useState(false);
-  const t = dict[lang];
+        const encodeUtf8 = (str) => {
+            try { return unescape(encodeURIComponent(str)); } catch (e) { return str; }
+        };
 
-  const [urlData, setUrlData] = useState('');
-  const [textData, setTextData] = useState('');
-  const [debouncedValue, setDebouncedValue] = useState('');
+        // --- Translation Dictionary ---
+        const dict = {
+            en: {
+                urlTab: 'URL Link', textTab: 'Plain Text',
+                websiteUrl: 'Website URL', textContent: 'Text Content',
+                textPlaceholder: 'Type here...',
+                colors: 'Colors & Design', primary: 'Primary', secondary: 'Secondary', bg: 'Background',
+                shapes: 'Shapes', pattern: 'Style', square: 'Square', dots: 'Dots', rounded: 'Rounded',
+                customLogo: 'Center Logo', upload: 'Upload Logo',
+                lowContrast: 'Low Contrast - May scan poorly',
+                dlPng: 'Download PNG', dlSvg: 'Download SVG',
+                historyTitle: 'Recent History', noHistory: 'No history yet.', restore: 'Restore'
+            },
+            th: {
+                urlTab: 'ลิงก์ URL', textTab: 'ข้อความ',
+                websiteUrl: 'URL เว็บไซต์', textContent: 'เนื้อหาข้อความ',
+                textPlaceholder: 'พิมพ์ที่นี่...',
+                colors: 'สีและการออกแบบ', primary: 'สีหลัก', secondary: 'สีรอง', bg: 'สีพื้นหลัง',
+                shapes: 'รูปทรง', pattern: 'รูปแบบ', square: 'สี่เหลี่ยม', dots: 'วงกลม', rounded: 'โค้งมน',
+                customLogo: 'โลโก้', upload: 'อัปโหลดภาพ',
+                lowContrast: 'คอนทราสต์ต่ำ อาจแสกนยาก',
+                dlPng: 'ดาวน์โหลด PNG', dlSvg: 'ดาวน์โหลด SVG',
+                historyTitle: 'ประวัติล่าสุด', noHistory: 'ยังไม่มีประวัติ', restore: 'กู้คืน'
+            }
+        };
 
-  const [isGradient, setIsGradient] = useState(true);
-  const [color1, setColor1] = useState('#8B5CF6');
-  const [color2, setColor2] = useState('#06B6D4');
-  const [bgColor, setBgColor] = useState('#FFFFFF');
-  const [dotType, setDotType] = useState('rounded');
-  const [errorCorrection, setErrorCorrection] = useState('H');
-  const [logoUrl, setLogoUrl] = useState('');
+        // --- Main Component ---
+        function App() {
+            const [isLibLoaded, setIsLibLoaded] = useState(false);
+            const qrCodeRef = useRef(null);
+            const qrContainerRef = useRef(null);
 
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js';
-    script.async = true;
-    script.onload = () => {
-      setIsLibLoaded(true);
-      qrCodeRef.current = new window.QRCodeStyling({
-        width: 280,
-        height: 280,
-        imageOptions: { hideBackgroundDots: true, imageSize: 0.4, margin: 5 }
-      });
-      if (qrContainerRef.current) qrCodeRef.current.append(qrContainerRef.current);
-    };
-    document.body.appendChild(script);
-    const saved = localStorage.getItem('quantum_qr_history');
-    if (saved) setHistory(JSON.parse(saved));
-    return () => { document.body.removeChild(script); };
-  }, []);
+            const [theme, setTheme] = useState('dark');
+            const [lang, setLang] = useState('th');
+            const [activeTab, setActiveTab] = useState('url');
+            const [history, setHistory] = useState([]);
+            const [showHistory, setShowHistory] = useState(false);
+            const t = dict[lang];
 
-  const currentRawValue = useMemo(() => {
-    let raw = activeTab === 'url' ? (urlData || 'https://quantumqrbynongdiw.pro') : (textData || 'Quantum QR');
-    return encodeUtf8(raw);
-  }, [activeTab, urlData, textData]);
+            const [urlData, setUrlData] = useState('');
+            const [textData, setTextData] = useState('');
+            const [debouncedValue, setDebouncedValue] = useState('');
 
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(currentRawValue);
-    }, 400);
-    return () => clearTimeout(handler);
-  }, [currentRawValue]);
+            const [isGradient, setIsGradient] = useState(true);
+            const [color1, setColor1] = useState('#8B5CF6');
+            const [color2, setColor2] = useState('#06B6D4');
+            const [bgColor, setBgColor] = useState('#FFFFFF');
+            const [dotType, setDotType] = useState('rounded');
+            const [logoUrl, setLogoUrl] = useState('');
 
-  useEffect(() => {
-    if (!isLibLoaded || !qrCodeRef.current) return;
-    qrCodeRef.current.update({
-      data: debouncedValue,
-      qrOptions: { errorCorrectionLevel: errorCorrection, typeNumber: 0 },
-      dotsOptions: {
-        type: dotType,
-        color: isGradient ? undefined : color1,
-        gradient: isGradient ? {
-          type: 'linear',
-          rotation: Math.PI / 4,
-          colorStops: [{ offset: 0, color: color1 }, { offset: 1, color: color2 }]
-        } : undefined
-      },
-      backgroundOptions: { color: bgColor },
-      cornersSquareOptions: { type: 'extra-rounded', color: color1 },
-      cornersDotOptions: { type: 'dot', color: isGradient ? color2 : color1 },
-      image: logoUrl || undefined,
-    });
-  }, [debouncedValue, isGradient, color1, color2, bgColor, dotType, errorCorrection, logoUrl, isLibLoaded]);
+            // Load QR Engine
+            useEffect(() => {
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/qr-code-styling@1.5.0/lib/qr-code-styling.js';
+                script.async = true;
+                script.onload = () => {
+                    setIsLibLoaded(true);
+                    qrCodeRef.current = new window.QRCodeStyling({
+                        width: 280, height: 280,
+                        imageOptions: { hideBackgroundDots: true, imageSize: 0.4, margin: 5 }
+                    });
+                    if (qrContainerRef.current) qrCodeRef.current.append(qrContainerRef.current);
+                };
+                document.body.appendChild(script);
+                const saved = localStorage.getItem('qr_pro_history');
+                if (saved) setHistory(JSON.parse(saved));
+            }, []);
 
-  const contrastRatio = getContrast(color1, bgColor);
-  const scanWarning = contrastRatio < 3;
-  
-  const handleLogoUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) setLogoUrl(URL.createObjectURL(file));
-  };
+            const currentRawValue = useMemo(() => {
+                let raw = activeTab === 'url' ? (urlData || 'https://quantumqrbynongdiw.pro') : (textData || 'Quantum QR');
+                return encodeUtf8(raw);
+            }, [activeTab, urlData, textData]);
 
-  const downloadQR = async (ext) => {
-    if (!qrCodeRef.current) return;
-    try {
-      await qrCodeRef.current.download({ 
-        name: `QuantumQR_${Date.now()}`, 
-        extension: ext 
-      });
-      const originalText = activeTab === 'url' ? urlData : textData;
-      if (originalText) {
-        const newItem = { id: Date.now(), type: activeTab, data: originalText, date: new Date().toLocaleString() };
-        const newHistory = [newItem, ...history].slice(0, 8);
-        setHistory(newHistory);
-        localStorage.setItem('quantum_qr_history', JSON.stringify(newHistory));
-      }
-    } catch (err) {
-      console.error("Download failed:", err);
-    }
-  };
+            useEffect(() => {
+                const handler = setTimeout(() => setDebouncedValue(currentRawValue), 350);
+                return () => clearTimeout(handler);
+            }, [currentRawValue]);
 
-  const themeClasses = theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900';
-  const panelClasses = theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200 shadow-sm';
-  const inputClasses = theme === 'dark' ? 'bg-black/20 border-white/10 text-white placeholder-white/30' : 'bg-slate-100 border-slate-200 text-slate-900 placeholder-slate-400';
+            useEffect(() => {
+                if (!isLibLoaded || !qrCodeRef.current) return;
+                qrCodeRef.current.update({
+                    data: debouncedValue,
+                    qrOptions: { errorCorrectionLevel: 'H', typeNumber: 0 },
+                    dotsOptions: {
+                        type: dotType,
+                        gradient: isGradient ? {
+                            type: 'linear', rotation: Math.PI / 4,
+                            colorStops: [{ offset: 0, color: color1 }, { offset: 1, color: color2 }]
+                        } : { type: 'linear', colorStops: [{offset:0, color: color1}, {offset:1, color: color1}] }
+                    },
+                    backgroundOptions: { color: bgColor },
+                    cornersSquareOptions: { type: 'extra-rounded', color: color1 },
+                    cornersDotOptions: { type: 'dot', color: isGradient ? color2 : color1 },
+                    image: logoUrl || undefined,
+                });
+            }, [debouncedValue, isGradient, color1, color2, bgColor, dotType, logoUrl, isLibLoaded]);
 
-  return (
-    <div className={`min-h-screen ${themeClasses} font-sans transition-colors duration-300`}>
-      <header className="sticky top-0 z-50 backdrop-blur-md border-b border-white/10 px-6 py-4 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <QrCode className="text-purple-500 w-7 h-7" />
-          <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent">Quantum QR</h1>
-        </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => setLang(lang === 'en' ? 'th' : 'en')} className="text-xs font-bold px-3 py-1 rounded-full border border-white/10">
-            {lang === 'en' ? 'TH' : 'EN'}
-          </button>
-          <button onClick={() => setShowHistory(!showHistory)} className="p-2 opacity-70 hover:opacity-100"><History size={18} /></button>
-          <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 opacity-70 hover:opacity-100">
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-          </button>
-        </div>
-      </header>
+            const downloadQR = async (ext) => {
+                if (!qrCodeRef.current) return;
+                await qrCodeRef.current.download({ name: `QR_${Date.now()}`, extension: ext });
+                const originalText = activeTab === 'url' ? urlData : textData;
+                if (originalText) {
+                    const newItem = { id: Date.now(), type: activeTab, data: originalText, date: new Date().toLocaleTimeString() };
+                    const newHistory = [newItem, ...history].slice(0, 5);
+                    setHistory(newHistory);
+                    localStorage.setItem('qr_pro_history', JSON.stringify(newHistory));
+                }
+            };
 
-      <main className="max-w-6xl mx-auto p-4 md:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          <div className={`flex p-1 rounded-xl border ${panelClasses}`}>
-            {[
-              { id: 'url', icon: LinkIcon, label: t.urlTab },
-              { id: 'text', icon: Type, label: t.textTab },
-            ].map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === tab.id ? 'bg-purple-600 text-white shadow-lg' : 'opacity-60 hover:opacity-100'
-                }`}
-              >
-                <tab.icon size={16} /> <span>{tab.label}</span>
-              </button>
-            ))}
-          </div>
+            const panelClasses = theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200 shadow-sm';
+            const inputClasses = theme === 'dark' ? 'bg-black/20 border-white/10 text-white placeholder-white/20' : 'bg-slate-100 border-slate-200 text-slate-900';
 
-          <div className={`rounded-2xl border p-5 ${panelClasses}`}>
-            {activeTab === 'url' ? (
-              <div className="space-y-2">
-                <label className="text-xs font-semibold uppercase opacity-50">{t.websiteUrl}</label>
-                <input 
-                  type="url" 
-                  value={urlData} 
-                  onChange={(e) => setUrlData(e.target.value)} 
-                  placeholder="https://quantumqrbynongdiw.pro" 
-                  className={`w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-purple-500/50 ${inputClasses}`} 
-                />
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <label className="text-xs font-semibold uppercase opacity-50">{t.textContent}</label>
-                <textarea 
-                  value={textData} 
-                  onChange={(e) => setTextData(e.target.value)} 
-                  placeholder={t.textPlaceholder} 
-                  rows={4} 
-                  className={`w-full px-4 py-3 rounded-xl border outline-none focus:ring-2 focus:ring-purple-500/50 resize-none ${inputClasses}`} 
-                />
-              </div>
-            )}
-          </div>
+            return (
+                <div className={`min-h-screen ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'} transition-colors duration-300 pb-20`}>
+                    {/* Header */}
+                    <nav className="p-5 flex justify-between items-center max-w-6xl mx-auto">
+                        <div className="flex items-center gap-2 group cursor-pointer">
+                            <div className="p-2 bg-purple-600 rounded-lg group-hover:rotate-12 transition-transform">
+                                <i data-lucide="qr-code"></i>
+                            </div>
+                            <span className="font-bold text-xl tracking-tight">Quantum <span className="text-purple-500 text-sm">PRO</span></span>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => setLang(l => l==='en'?'th':'en')} className="px-3 py-1.5 rounded-full border border-white/10 text-xs font-bold hover:bg-white/5 uppercase">{lang}</button>
+                            <button onClick={() => setTheme(t => t==='dark'?'light':'dark')} className="p-2 rounded-full hover:bg-white/5">
+                                {theme === 'dark' ? <i data-lucide="sun"></i> : <i data-lucide="moon"></i>}
+                            </button>
+                            <button onClick={() => setShowHistory(true)} className="p-2 rounded-full hover:bg-white/5">
+                                <i data-lucide="history"></i>
+                            </button>
+                        </div>
+                    </nav>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className={`rounded-2xl border p-5 ${panelClasses}`}>
-              <h3 className="text-sm font-bold mb-4 flex items-center gap-2"><Palette size={16}/> {t.colors}</h3>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <label className="text-[10px] opacity-60 uppercase">{t.primary}</label>
-                    <input type="color" value={color1} onChange={(e) => setColor1(e.target.value)} className="w-full h-8 rounded cursor-pointer" />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] opacity-60 uppercase">{t.secondary}</label>
-                    <input type="color" value={color2} onChange={(e) => setColor2(e.target.value)} className="w-full h-8 rounded cursor-pointer" />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] opacity-60 uppercase">{t.bg}</label>
-                  <input type="color" value={bgColor} onChange={(e) => setBgColor(e.target.value)} className="w-full h-8 rounded cursor-pointer" />
-                </div>
-              </div>
-            </div>
+                    {/* Main Content */}
+                    <main className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 px-6 mt-4">
+                        <div className="lg:col-span-7 space-y-6">
+                            {/* Tabs */}
+                            <div className={`flex p-1.5 rounded-2xl border ${panelClasses}`}>
+                                <button onClick={() => setActiveTab('url')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-all ${activeTab === 'url' ? 'bg-purple-600 text-white shadow-xl shadow-purple-900/20' : 'opacity-50 hover:opacity-100'}`}>
+                                    <i data-lucide="link"></i> {t.urlTab}
+                                </button>
+                                <button onClick={() => setActiveTab('text')} className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold transition-all ${activeTab === 'text' ? 'bg-purple-600 text-white shadow-xl shadow-purple-900/20' : 'opacity-50 hover:opacity-100'}`}>
+                                    <i data-lucide="type"></i> {t.textTab}
+                                </button>
+                            </div>
 
-            <div className={`rounded-2xl border p-5 ${panelClasses}`}>
-              <h3 className="text-sm font-bold mb-4 flex items-center gap-2"><LayoutGrid size={16}/> {t.shapes}</h3>
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <label className="text-[10px] opacity-60 uppercase">{t.pattern}</label>
-                  <select value={dotType} onChange={(e) => setDotType(e.target.value)} className={`w-full px-3 py-2 rounded-lg border text-sm ${inputClasses}`}>
-                    <option value="square">{t.square}</option>
-                    <option value="dots">{t.dots}</option>
-                    <option value="rounded">{t.rounded}</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] opacity-60 uppercase">{t.customLogo}</label>
-                  <div className="flex items-center gap-2">
-                    <label className={`flex-1 flex items-center justify-center gap-2 py-2 border border-dashed rounded-lg cursor-pointer text-xs ${inputClasses}`}>
-                      <ImagePlus size={14} /> <span>{t.upload}</span>
-                      <input type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-                    </label>
-                    {logoUrl && <button onClick={() => setLogoUrl('')} className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg"><X size={16} /></button>}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+                            {/* Inputs */}
+                            <div className={`p-6 rounded-3xl border ${panelClasses}`}>
+                                {activeTab === 'url' ? (
+                                    <div className="space-y-3">
+                                        <label className="text-xs font-bold uppercase opacity-40 ml-1">{t.websiteUrl}</label>
+                                        <input type="url" value={urlData} onChange={e => setUrlData(e.target.value)} placeholder="https://quantumqrbynongdiw.pro" className={`w-full p-4 rounded-2xl outline-none focus:ring-2 focus:ring-purple-500 border transition-all ${inputClasses}`} />
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        <label className="text-xs font-bold uppercase opacity-40 ml-1">{t.textContent}</label>
+                                        <textarea value={textData} onChange={e => setTextData(e.target.value)} placeholder={t.textPlaceholder} rows="4" className={`w-full p-4 rounded-2xl outline-none focus:ring-2 focus:ring-purple-500 border transition-all resize-none ${inputClasses}`} />
+                                    </div>
+                                )}
+                            </div>
 
-        <div className="flex flex-col gap-6">
-          <div className={`rounded-3xl border p-8 flex flex-col items-center justify-center min-h-[380px] relative overflow-hidden ${panelClasses}`}>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-purple-500/10 rounded-full blur-[80px]"></div>
-            <div ref={qrContainerRef} className="relative z-10 bg-white p-3 rounded-2xl shadow-2xl"></div>
-            {scanWarning && <div className="mt-4 text-red-500 text-[10px] font-bold px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-full">{t.lowContrast}</div>}
-          </div>
+                            {/* Customizer */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className={`p-6 rounded-3xl border ${panelClasses}`}>
+                                    <h3 className="text-sm font-bold flex items-center gap-2 mb-5 uppercase opacity-60"><i data-lucide="palette"></i> {t.colors}</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <span className="text-[10px] uppercase font-bold opacity-50">{t.primary}</span>
+                                            <input type="color" value={color1} onChange={e => setColor1(e.target.value)} className="w-full h-12 rounded-xl cursor-pointer" />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <span className="text-[10px] uppercase font-bold opacity-50">{t.secondary}</span>
+                                            <input type="color" value={color2} onChange={e => setColor2(e.target.value)} className="w-full h-12 rounded-xl cursor-pointer" />
+                                        </div>
+                                        <div className="col-span-2 space-y-2">
+                                            <span className="text-[10px] uppercase font-bold opacity-50">{t.bg}</span>
+                                            <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} className="w-full h-12 rounded-xl cursor-pointer" />
+                                        </div>
+                                    </div>
+                                </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <button 
-              onClick={() => downloadQR('png')} 
-              className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-sm font-bold transition-all shadow-lg bg-purple-600 text-white hover:bg-purple-500 shadow-purple-900/20"
-            >
-              <Download size={16} /> {t.dlPng}
-            </button>
-            <button 
-              onClick={() => downloadQR('svg')} 
-              className={`flex items-center justify-center gap-2 py-3 px-4 rounded-xl border text-sm font-bold ${panelClasses}`}
-            >
-              <Download size={16} /> {t.dlSvg}
-            </button>
-          </div>
-        </div>
-      </main>
+                                <div className={`p-6 rounded-3xl border ${panelClasses}`}>
+                                    <h3 className="text-sm font-bold flex items-center gap-2 mb-5 uppercase opacity-60"><i data-lucide="layout-grid"></i> {t.shapes}</h3>
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <span className="text-[10px] uppercase font-bold opacity-50">{t.pattern}</span>
+                                            <select value={dotType} onChange={e => setDotType(e.target.value)} className={`w-full p-3 rounded-xl border text-sm outline-none ${inputClasses}`}>
+                                                <option value="square">{t.square}</option>
+                                                <option value="rounded">{t.rounded}</option>
+                                                <option value="dots">{t.dots}</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <span className="text-[10px] uppercase font-bold opacity-50">{t.customLogo}</span>
+                                            <label className={`w-full p-3 rounded-xl border border-dashed flex items-center justify-center gap-2 text-xs font-bold cursor-pointer transition-all hover:border-purple-500/50 ${inputClasses}`}>
+                                                <i data-lucide="image-plus"></i> {t.upload}
+                                                <input type="file" className="hidden" accept="image/*" onChange={e => {
+                                                    const f = e.target.files[0];
+                                                    if(f) setLogoUrl(URL.createObjectURL(f));
+                                                }} />
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-      {showHistory && (
-        <div className="fixed inset-0 z-[100] flex justify-end">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowHistory(false)}></div>
-          <div className={`relative w-full max-sm h-full p-6 shadow-2xl overflow-y-auto ${theme === 'dark' ? 'bg-slate-900 border-l border-white/10' : 'bg-white border-l border-slate-200'}`}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="font-bold flex items-center gap-2"><History size={18} className="text-purple-500"/> {t.historyTitle}</h2>
-              <button onClick={() => setShowHistory(false)}><X size={20} /></button>
-            </div>
-            {history.length === 0 ? <p className="text-center opacity-40 text-sm mt-12">{t.noHistory}</p> : (
-              <div className="space-y-3">
-                {history.map((item) => (
-                  <div key={item.id} className={`p-4 rounded-xl border ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
-                    <div className="flex justify-between text-[10px] font-bold uppercase mb-1 opacity-50">
-                      <span>{item.type}</span>
-                      <span>{item.date}</span>
+                        {/* QR Preview Side */}
+                        <div className="lg:col-span-5 flex flex-col gap-6">
+                            <div className={`p-10 rounded-[2.5rem] border flex flex-col items-center justify-center min-h-[400px] glass-panel relative overflow-hidden ${panelClasses}`}>
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 blur-[60px]"></div>
+                                <div className="absolute bottom-0 left-0 w-32 h-32 bg-cyan-500/10 blur-[60px]"></div>
+                                
+                                <div ref={qrContainerRef} className="relative z-10 p-4 bg-white rounded-3xl shadow-2xl shadow-black/20"></div>
+                                
+                                {getContrast(color1, bgColor) < 3 && (
+                                    <p className="mt-4 text-[10px] font-bold text-red-400 bg-red-400/10 px-4 py-1.5 rounded-full border border-red-400/20">{t.lowContrast}</p>
+                                )}
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <button onClick={() => downloadQR('png')} className="py-4 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm shadow-xl shadow-purple-900/30 flex items-center justify-center gap-2 transition-transform active:scale-95">
+                                    <i data-lucide="download"></i> {t.dlPng}
+                                </button>
+                                <button onClick={() => downloadQR('svg')} className={`py-4 rounded-2xl border font-bold text-sm flex items-center justify-center gap-2 transition-transform active:scale-95 ${panelClasses}`}>
+                                    <i data-lucide="file-code"></i> {t.dlSvg}
+                                </button>
+                            </div>
+                        </div>
+                    </main>
+
+                    {/* Footer Mobile Info */}
+                    <div className="fixed bottom-0 left-0 right-0 p-4 text-center opacity-30 text-[10px] pointer-events-none uppercase tracking-widest">
+                        Powered by Quantum Engine v2.0
                     </div>
-                    <p className="text-xs truncate font-mono">{item.data}</p>
-                    <button onClick={() => { if(item.type==='url') setUrlData(item.data); else setTextData(item.data); setActiveTab(item.type); setShowHistory(false); }} className="text-[10px] font-bold text-cyan-500 mt-2 uppercase">{t.restore}</button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
+
+                    {/* History Drawer */}
+                    {showHistory && (
+                        <div className="fixed inset-0 z-[1000] flex justify-end">
+                            <div className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setShowHistory(false)}></div>
+                            <div className={`relative w-full max-w-sm h-full p-8 shadow-2xl animate-slide-left ${theme === 'dark' ? 'bg-slate-900 border-l border-white/10' : 'bg-white border-l border-slate-200'}`}>
+                                <div className="flex justify-between items-center mb-8">
+                                    <h2 className="text-xl font-bold">{t.historyTitle}</h2>
+                                    <button onClick={() => setShowHistory(false)} className="p-2 hover:bg-white/10 rounded-full"><i data-lucide="x"></i></button>
+                                </div>
+                                {history.length === 0 ? <p className="text-center mt-20 opacity-30 italic">{t.noHistory}</p> : (
+                                    <div className="space-y-4">
+                                        {history.map(item => (
+                                            <div key={item.id} className={`p-4 rounded-2xl border ${theme === 'dark' ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
+                                                <div className="flex justify-between text-[10px] opacity-40 font-bold mb-2 uppercase">
+                                                    <span>{item.type}</span>
+                                                    <span>{item.date}</span>
+                                                </div>
+                                                <p className="text-xs truncate font-mono mb-3">{item.data}</p>
+                                                <button onClick={() => { if(item.type==='url') setUrlData(item.data); else setTextData(item.data); setShowHistory(false); }} className="text-[10px] font-black text-purple-500 uppercase">{t.restore}</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+        // Init Lucide Icons
+        window.onload = () => lucide.createIcons();
+        // Update icons on any click for dynamic elements
+        document.body.onclick = () => setTimeout(() => lucide.createIcons(), 50);
+    </script>
+    
+    <style>
+        @keyframes slide-left {
+            from { transform: translateX(100%); }
+            to { transform: translateX(0); }
+        }
+        .animate-slide-left { animation: slide-left 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    </style>
+</body>
+</html>
