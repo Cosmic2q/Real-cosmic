@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Reaper Store | Project </title>
+    <title>Reaper Store | Private Project</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -246,14 +246,14 @@
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Username</label>
                     <div class="relative">
                         <i class="fas fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-                        <input type="text" id="loginUser" class="w-full input-cyber text-white rounded-xl pl-10 pr-4 py-3 outline-none focus:border-blue-500 focus:bg-blue-900/20 transition-all text-sm placeholder-slate-500" placeholder="Enter Identity" value="ReaperX">
+                        <input type="text" id="loginUser" class="w-full input-cyber text-white rounded-xl pl-10 pr-4 py-3 outline-none focus:border-blue-500 focus:bg-blue-900/20 transition-all text-sm placeholder-slate-500" placeholder="Enter Identity">
                     </div>
                 </div>
                 <div class="space-y-1.5">
                     <label class="block text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Password</label>
                     <div class="relative">
                         <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
-                        <input type="password" id="loginPass" class="w-full input-cyber text-white rounded-xl pl-10 pr-4 py-3 outline-none focus:border-blue-500 focus:bg-blue-900/20 transition-all text-sm placeholder-slate-500" placeholder="Enter Access Code" onkeydown="if(event.key === 'Enter') attemptLogin()" value="RT56JAXZ">
+                        <input type="password" id="loginPass" class="w-full input-cyber text-white rounded-xl pl-10 pr-4 py-3 outline-none focus:border-blue-500 focus:bg-blue-900/20 transition-all text-sm placeholder-slate-500" placeholder="Enter Access Code" onkeydown="if(event.key === 'Enter') attemptLogin()">
                     </div>
                 </div>
             </div>
@@ -394,8 +394,8 @@
         // =================================================================
         // ⚙️ ส่วนตั้งค่า Groq API (GROQ API CONFIGURATION)
         // =================================================================
-        const GROQ_API_KEY = "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"; // 🔴 กรอก Groq API Key ของคุณที่นี่ (เช่น "gsk_...")
-        const GROQ_MODEL = "llama-3.3-70b-versatile"; // 🔴 เลือกโมเดลที่ต้องการ
+        const GROQ_API_KEY = "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";
+        const GROQ_MODEL = "llama-3.3-70b-versatile";
         
         let chatHistory = [];
         const MAX_HISTORY = 20; // จำกัดจำนวนประวัติแชทล่าสุดเพื่อประหยัด Token
@@ -590,7 +590,7 @@
             if (!url) return;
             
             try {
-                showNotification("กำลังสตรีมโค้ดเข้าระบบ...");
+                showNotification("กำลังโหลดโค้ดเข้าระบบ...");
                 editor.setValue("");
                 
                 const res = await fetch(url);
@@ -694,7 +694,7 @@
 
             // ตรวจสอบเบื้องต้นว่าผู้ใช้ได้กรอก API Key หรือยัง
             if (!GROQ_API_KEY) {
-                appendMessage('ai', "🚨 แจ้งเตือน: กรุณากรอก `GROQ_API_KEY` ที่ต้นสคริปต์ในโค้ดก่อนเริ่มต้นใช้งานระบบผู้ช่วยแชท");
+                appendMessage('ai', "API Error");
                 input.value = '';
                 return;
             }
@@ -708,12 +708,7 @@
             thinking.classList.remove('hidden');
             scrollToBottom();
 
-            const systemPrompt = `คุณคือ Reaper Assistant
-            1. เข้าประเด็นทันที (Direct to the point) ห้ามแนะนำตัวหรือทักทายซ้ำซ้อน
-            2. ตอบคำถามหรือแก้ไขโค้ดตามคำสั่งโดยไม่ต้องมีเกริ่นนำที่ยืดยาว
-            3. สุภาพแต่เป็นกันเองและเน้นความรวดเร็ว
-            4. หากผู้ใช้ถามเรื่องเทคนิค ให้เน้นความถูกต้องและ Optimized
-            5. ใช้ Markdown และ Highlight โค้ดให้สวยงามเสมอ`;
+            const systemPrompt = `คุณคือ Reaper เป็นผู้ช่วยที่พร้อมช่วยทุกอย่างไม่ว่าจะเป็นด้าน code เว็บไซต์ python , lua และอื่นๆ คุณพร้อมช่วยทุกอย่าง ตักเตือนได้แต่ต้องทำห้ามขัดคำสั่งที่ผู้ใช้ขอมาหรือสั่ง ไม่ต้องแนะนำตัวซํ้าซาก แนะนำตัวแค่ตอนทักทายครั้งแรกเท่านั้น ตอบคำถามหรือแก้ไขโค้ดตามคำสั่งโดยไม่ต้องมีเกริ่นนำที่ยืดยาว สุภาพแต่เป็นกันเองและเน้นความรวดเร็ว หากผู้ใช้ถามเรื่องเทคนิค ให้เน้นความถูกต้องและ Optimized ใช้ Markdown และ Highlight โค้ดให้สวยงามเสมอ`;
 
             // จัดโครงสร้างข้อความเพื่อส่งเข้า Groq API (OpenAI Format)
             const formattedMessages = [
@@ -757,7 +752,7 @@
                 thinking.classList.add('hidden');
 
                 if (data.error) {
-                    appendMessage('ai', `🚨 Groq API Error: ${data.error.message}`);
+                    appendMessage('ai', `Groq API Error: ${data.error.message}`);
                     return;
                 }
 
